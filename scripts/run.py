@@ -2,7 +2,7 @@ from pathlib import Path
 import essentia.standard as estd
 from essentia.pytools.spectral import hpcpgram
 
-data_dir = Path("./coversongs/covers32k")
+data_dir = Path("./covers32k")
 
 def main():
     query_filename = str(data_dir / "Yesterday/en_vogue+Funky_Divas+09-Yesterday.mp3")

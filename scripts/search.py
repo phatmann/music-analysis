@@ -4,7 +4,7 @@ from pathlib import Path
 import essentia.standard as estd
 from essentia.pytools.spectral import hpcpgram
 
-data_dir = Path("./coversongs/covers32k")
+data_dir = Path("./covers32k")
 song_library = {}  # song name -> hpcp
 
 

@@ -3,7 +3,6 @@ import numpy as np
 import pinecone
 from tqdm import tqdm
 from pathlib import Path
-from feature_extraction import extract_features
 
 data_dir = Path("./covers32k")
 song_library = {}  # song -> embedding
@@ -18,6 +17,7 @@ def load_song_embedding():
         songs = np.load(library_file, allow_pickle=True)
         song_library.update(songs)
     else:
+        from music_analysis.feature_extraction import extract_features
         song_files = list(data_dir.glob("**/*.mp3"))
         pbar = tqdm(total=len(song_files))
         for song in song_files:
