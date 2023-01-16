@@ -1,3 +1,4 @@
+import logging
 import os
 import tempfile
 from enum import Enum, unique
@@ -6,7 +7,7 @@ from typing import Dict, List, Union
 
 import ffmpeg
 import pinecone
-from fastapi import FastAPI, UploadFile
+from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pinecone.core.client.model.query_response import QueryResponse
 from pydantic import BaseModel
@@ -14,6 +15,7 @@ from tqdm import tqdm
 
 from music_analysis.feature_extraction import extract_features
 
+logger = logging.getLogger()
 data_dir = Path("./covers32k")
 api_key = os.getenv("PINECONE_API_KEY") or "820713d5-37c7-4570-877a-b23efb701b1c"
 pinecone.init(api_key=api_key, environment="us-west1-gcp")
@@ -34,20 +36,17 @@ class PineConeQueryResult(BaseModel):
 
 
 class SearchResult(BaseModel):
-    results: Union[PineConeQueryResult]
+    results: List[Dict] = []
+    error: str = ""
 
 
 @unique
 class SearchOption(str, Enum):
-    CoverSong = "Cover Song"
-    Auto = "Auto Similarity"
-    Mood = "Mood Similarity"
-    Instrument = "Instrument Similarity"
-
-
-class SongSearchRequest(BaseModel):
-    files: List[UploadFile]
-    option: SearchOption
+    Auto = "Auto"
+    Lyrics = "Lyrics"
+    Mood = "Mood"
+    Instrument = "Instrument"
+    Genre = "Genre"
 
 
 app = FastAPI(
@@ -75,16 +74,26 @@ def search_cover_song(upload_files: List[UploadFile]) -> List[Dict]:
         result = cover_song_index.query(
             vector=query_features["embedding"].tolist(), top_k=1, include_metadata=True
         )
-        result.to_dict()
-    results.append(result)
+        results.append(result.to_dict())
+    return results
 
 
-@app.post("/search", summary="Search song", response_model=SearchResult)
-def search_song(request: SongSearchRequest):
-    results = []
-    if request.option == SearchOption.CoverSong:
-        results = search_cover_song(request.files)
-    return {"results": results}
+@app.post("/search", summary="Search similar songs", response_model=SearchResult)
+def search(
+    files: List[UploadFile] = File(description="Multiple files as UploadFile"),
+    option: SearchOption = SearchOption.Auto,
+):
+    ret = {}
+    if option == SearchOption.Lyrics:
+        try:
+            results = search_cover_song(files)
+            ret["results"] = results
+        except Exception as ex:
+            logger.error(ex)
+            ret["error"] = str(ex)
+    else:
+        ret["error"] = f"Search option {SearchOption} is not supported"
+    return ret
 
 
 if __name__ == "__main__":
