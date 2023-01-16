@@ -1,15 +1,17 @@
 import os
 import tempfile
-from tqdm import tqdm
+from enum import Enum, unique
 from pathlib import Path
+from typing import Dict, List, Union
+
 import ffmpeg
 import pinecone
 from fastapi import FastAPI, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from typing import List, Dict
-from pydantic import BaseModel
-
 from pinecone.core.client.model.query_response import QueryResponse
+from pydantic import BaseModel
+from tqdm import tqdm
+
 from music_analysis.feature_extraction import extract_features
 
 data_dir = Path("./covers32k")
@@ -25,9 +27,28 @@ class PineConeVector(BaseModel):
     sparseValues: Dict = {}
     values: List = []
 
+
 class PineConeQueryResult(BaseModel):
     matches: List[PineConeVector] = []
-    namespace: str = ''
+    namespace: str = ""
+
+
+class SearchResult(BaseModel):
+    results: Union[PineConeQueryResult]
+
+
+@unique
+class SearchOption(str, Enum):
+    CoverSong = "Cover Song"
+    Auto = "Auto Similarity"
+    Mood = "Mood Similarity"
+    Instrument = "Instrument Similarity"
+
+
+class SongSearchRequest(BaseModel):
+    files: List[UploadFile]
+    option: SearchOption
+
 
 app = FastAPI(
     title="Music Search Service",
@@ -39,21 +60,32 @@ app = FastAPI(
 app.add_middleware(CORSMiddleware, allow_origins=["*"])
 
 
-@app.post("/search", summary="Search cover song", response_model=PineConeQueryResult)
-def search_cover_song(file: UploadFile):
-    fd, tmp = tempfile.mkstemp()
-    try:
-        with open(tmp, 'wb') as f:
-            file.file.seek(0)
-            content = file.file.read()
-            f.write(content)
-        query_features = extract_features(tmp)
-    finally:
-        os.unlink(tmp)
-    results = cover_song_index.query(
-        vector=query_features["embedding"].tolist(), top_k=5, include_metadata=True
-    )
-    return results.to_dict()
+def search_cover_song(upload_files: List[UploadFile]) -> List[Dict]:
+    results = []
+    for file in upload_files:
+        fd, tmp = tempfile.mkstemp()
+        try:
+            with open(tmp, "wb") as f:
+                file.file.seek(0)
+                content = file.file.read()
+                f.write(content)
+            query_features = extract_features(tmp)
+        finally:
+            os.unlink(tmp)
+        result = cover_song_index.query(
+            vector=query_features["embedding"].tolist(), top_k=1, include_metadata=True
+        )
+        result.to_dict()
+    results.append(result)
+
+
+@app.post("/search", summary="Search song", response_model=SearchResult)
+def search_song(request: SongSearchRequest):
+    results = []
+    if request.option == SearchOption.CoverSong:
+        results = search_cover_song(request.files)
+    return {"results": results}
+
 
 if __name__ == "__main__":
     import uvicorn
