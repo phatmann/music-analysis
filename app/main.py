@@ -121,7 +121,7 @@ def search_cover_song(upload_files: List[UploadFile]) -> List[Dict]:
     return results
 
 
-def auto_search(upload_files: List[UploadFile]) -> List[Dict]:
+def auto_search(upload_files: List[UploadFile], offset, duration) -> List[Dict]:
     results = []
     features = pd.DataFrame(
         index=list(range(len(upload_files))), columns=columns(), dtype=np.float32
@@ -133,14 +133,14 @@ def auto_search(upload_files: List[UploadFile]) -> List[Dict]:
                 file.file.seek(0)
                 content = file.file.read()
                 f.write(content)
-            features.loc[i] = compute_features(tmp)
+            features.loc[i] = compute_features(tmp, offset, duration)
         finally:
             os.unlink(tmp)
     clusters = fma_model.predict(features)
 
     for cluster in clusters:
         samples = small_tracks[small_tracks["cluster"] == cluster].sample(2)
-        results += {"song": i for i in samples.index}
+        results += list(samples["album"].T.to_dict().values())
     return results
 
 
@@ -148,6 +148,8 @@ def auto_search(upload_files: List[UploadFile]) -> List[Dict]:
 def search(
     files: List[UploadFile] = File(description="Multiple files as UploadFile"),
     option: SearchOption = SearchOption.Auto,
+    offset: float = 0.0,
+    duration: float = None,
 ):
     ret = {}
     if option == SearchOption.Lyrics:
@@ -159,7 +161,7 @@ def search(
             ret["error"] = str(ex)
     if option == SearchOption.Auto:
         try:
-            results = auto_search(files)
+            results = auto_search(files, offset, duration)
             ret["results"] = results
         except Exception as ex:
             logger.error(ex)

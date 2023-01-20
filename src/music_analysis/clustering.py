@@ -53,7 +53,7 @@ def columns():
     return columns.sort_values()
 
 
-def compute_features(filepath: str):
+def compute_features(filepath: str, offset: float = 0.0, duration: float = None):
 
     features = pd.Series(index=columns(), dtype=np.float32, name=filepath)
 
@@ -67,7 +67,9 @@ def compute_features(filepath: str):
         features[name, "max"] = np.max(values, axis=1)
 
     try:
-        x, sr = librosa.load(filepath, sr=None, mono=True)  # kaiser_fast
+        x, sr = librosa.load(
+            filepath, sr=None, mono=True, offset=offset, duration=duration
+        )  # kaiser_fast
 
         f = librosa.feature.zero_crossing_rate(x, frame_length=2048, hop_length=512)
         feature_stats("zcr", f)
