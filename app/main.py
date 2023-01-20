@@ -140,7 +140,7 @@ def auto_search(upload_files: List[UploadFile]) -> List[Dict]:
 
     for cluster in clusters:
         samples = small_tracks[small_tracks["cluster"] == cluster].sample(2)
-        results += samples.to_list()
+        results += {"song": i for i in samples.index}
     return results
 
 
@@ -159,7 +159,7 @@ def search(
             ret["error"] = str(ex)
     if option == SearchOption.Auto:
         try:
-            results = search_cover_song(files)
+            results = auto_search(files)
             ret["results"] = results
         except Exception as ex:
             logger.error(ex)

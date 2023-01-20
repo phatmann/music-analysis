@@ -11,20 +11,17 @@ import dotenv
 import librosa
 import numpy as np
 import pandas as pd
-import utils
 from scipy import stats
 from sklearn.cluster import KMeans
 from tqdm import tqdm
+
+from music_analysis import utils
 
 logger = logging.getLogger()
 
 warnings.simplefilter("ignore", UserWarning)
 
 dotenv.load_dotenv()
-
-METADATA_DIR = Path(os.environ.get("METADATA_DIR")).expanduser()
-tracks = utils.load(METADATA_DIR / "tracks.csv")
-small_tracks = tracks[(tracks["set", "subset"] == "small")]
 
 
 def columns():
@@ -123,6 +120,10 @@ def compute_features(filepath: str):
 
 
 def cluster(tracks):
+    METADATA_DIR = Path(os.environ.get("METADATA_DIR")).expanduser()
+    tracks = utils.load(METADATA_DIR / "tracks.csv")
+    small_tracks = tracks[(tracks["set", "subset"] == "small")]
+
     features = utils.load(METADATA_DIR / "features.csv")
 
     X = features.loc[small_tracks.index, :].values
@@ -141,6 +142,9 @@ def predict(song: str):
 
 
 def predict_list(songs: list):
+    METADATA_DIR = Path(os.environ.get("METADATA_DIR")).expanduser()
+    tracks = utils.load(METADATA_DIR / "tracks.csv")
+    small_tracks = tracks[(tracks["set", "subset"] == "small")]
     model = pickle.load(open("save.pkl", "rb"))
     small_tracks["cluster"] = model.labels_
     features = pd.DataFrame(index=songs, columns=columns(), dtype=np.float32)
