@@ -138,9 +138,13 @@ def auto_search(upload_files: List[UploadFile], offset, duration) -> List[Dict]:
             os.unlink(tmp)
     clusters = fma_model.predict(features)
 
+    keys = ["title", "track"]
     for cluster in clusters:
         samples = small_tracks[small_tracks["cluster"] == cluster].sample(2)
-        results += list(samples["album"].T.to_dict().values())
+        for i, track in samples.iterrows():
+            result = {k: v for k, v in track["album"].items() if k in keys}
+            result["track_id"] = i
+            results.append(result)
     return results
 
 
