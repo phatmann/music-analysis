@@ -11,7 +11,7 @@ pip install -e .
 ### Run the server
 ```
 cd app
-python main.py
+./run.sh
 ```
 
 ### API Docs
