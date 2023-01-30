@@ -11,6 +11,7 @@ import ffmpeg
 import numpy as np
 import pandas as pd
 import pinecone
+import requests
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pinecone.core.client.model.query_response import QueryResponse
@@ -18,7 +19,6 @@ from pydantic import BaseModel
 from tqdm import tqdm
 
 from music_analysis.clustering import compute_features
-from music_analysis.feature_extraction import extract_features
 from music_analysis.utils import load
 
 dotenv.load_dotenv()
@@ -104,16 +104,11 @@ small_tracks["cluster"] = fma_model.labels_
 
 def search_cover_song(upload_files: List[UploadFile]) -> List[Dict]:
     results = []
-    for file in upload_files:
-        fd, tmp = tempfile.mkstemp()
-        try:
-            with open(tmp, "wb") as f:
-                file.file.seek(0)
-                content = file.file.read()
-                f.write(content)
-            query_features = extract_features(tmp)
-        finally:
-            os.unlink(tmp)
+    for upload_file in upload_files:
+        query_features = requests.post(
+            "http://localhost:3002/extract_lyrics_features",
+            files={"upload_file": upload_file},
+        )
         result = cover_song_index.query(
             vector=query_features["embedding"].tolist(), top_k=1, include_metadata=True
         )
