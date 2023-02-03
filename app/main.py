@@ -19,7 +19,7 @@ from pydantic import BaseModel
 from tqdm import tqdm
 
 from music_analysis.feature_extraction_clustering import compute_features
-from music_analysis.utils import load
+from music_analysis.utils import get_metadata_dir, load
 
 dotenv.load_dotenv()
 
@@ -95,10 +95,10 @@ app = FastAPI(
 )
 app.add_middleware(CORSMiddleware, allow_origins=["*"])
 
-METADATA_DIR = Path(os.environ.get("METADATA_DIR")).expanduser()
-tracks = load(METADATA_DIR / "tracks.csv")
-small_tracks = tracks[(tracks["set", "subset"] == "small")]
-fma_model = pickle.load(open("fma-small-cluster100-jan20.pkl", "rb"))
+small_tracks = load(get_metadata_dir() / "small-tracks.csv")
+fma_model = pickle.load(
+    open("single-frame-features-fma-small-cluster100-feb3.pkl", "rb")
+)
 small_tracks["cluster"] = fma_model.labels_
 
 

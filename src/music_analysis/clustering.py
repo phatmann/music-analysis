@@ -22,11 +22,11 @@ dotenv.load_dotenv()
 
 
 def train():
-    METADATA_DIR = Path(os.environ.get("METADATA_DIR")).expanduser()
+    metadata_dir = utils.get_metadata_dir()
     # tracks = utils.load(METADATA_DIR / "tracks.csv")
     # small_tracks = tracks[(tracks["set", "subset"] == "small")]
-    small_tracks = utils.load(METADATA_DIR / "small-tracks.csv")
-    features = utils.load(METADATA_DIR / "small-track-features.csv")
+    small_tracks = utils.load(metadata_dir / "small-tracks.csv")
+    features = utils.load(metadata_dir / "small-track-features.csv")
     features = features.fillna(0)
     # invalid_tids = [99134, 108925, 133297]  # these tracks should be ignored
 
@@ -47,8 +47,8 @@ def predict(song: str):
 
 
 def predict_list(songs: list):
-    METADATA_DIR = Path(os.environ.get("METADATA_DIR")).expanduser()
-    small_tracks = utils.load(METADATA_DIR / "small-tracks.csv")
+    metadata_dir = utils.get_metadata_dir()
+    small_tracks = utils.load(metadata_dir / "small-tracks.csv")
 
     model = pickle.load(open("save.pkl", "rb"))
     small_tracks["cluster"] = model.labels_

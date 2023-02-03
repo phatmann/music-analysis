@@ -4,6 +4,7 @@ import multiprocessing
 import multiprocessing.sharedctypes as sharedctypes
 import os.path
 import shutil
+from pathlib import Path
 
 import dotenv
 import numpy as np
@@ -21,7 +22,6 @@ dotenv.load_dotenv(dotenv.find_dotenv())
 
 
 class FreeMusicArchive:
-
     BASE_URL = "https://freemusicarchive.org/api/get/"
 
     def __init__(self, api_key):
@@ -138,7 +138,6 @@ class Genres:
         self.df = genres_df
 
     def create_tree(self, roots, depth=None):
-
         if type(roots) is not list:
             roots = [roots]
         graph = pydot.Dot(graph_type="digraph", strict=True)
@@ -183,7 +182,6 @@ class Genres:
 
 
 def load(filepath):
-
     filename = os.path.basename(filepath)
 
     if "features" in filename:
@@ -353,7 +351,6 @@ def build_sample_loader(audio_dir, Y, loader):
             return self
 
         def __next__(self):
-
             with self.lock1:
                 if self.batch_foremost.value == 0:
                     np.random.shuffle(self.tids)
@@ -393,3 +390,9 @@ def build_sample_loader(audio_dir, Y, loader):
                 return self.X[:batch_size], self.Y[:batch_size]
 
     return SampleLoader
+
+
+def get_metadata_dir():
+    basedir = Path(os.path.dirname(os.path.abspath(__file__)))
+    METADATA_DIR = Path(os.environ.get("METADATA_DIR")).expanduser()
+    return basedir / "../.." / METADATA_DIR

@@ -21,8 +21,8 @@ dotenv.load_dotenv()
 
 def create_library_features():
     """Calcualte features for song library and store them to csv"""
-    METADATA_DIR = Path(os.environ.get("METADATA_DIR")).expanduser()
-    tracks = utils.load(METADATA_DIR / "tracks.csv")
+    metadata_dir = utils.get_metadata_dir()
+    tracks = utils.load(metadata_dir / "tracks.csv")
     tracks = tracks[(tracks["set", "subset"] == "small")]
     features = pd.DataFrame(
         index=tracks.index, columns=spectral_columns(), dtype=np.float32
