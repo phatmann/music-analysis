@@ -18,7 +18,7 @@ from pinecone.core.client.model.query_response import QueryResponse
 from pydantic import BaseModel
 from tqdm import tqdm
 
-from music_analysis.clustering import compute_features
+from music_analysis.feature_extraction_clustering import compute_features
 from music_analysis.utils import load
 
 dotenv.load_dotenv()
@@ -116,7 +116,7 @@ def search_cover_song(upload_files: List[UploadFile]) -> List[Dict]:
     return results
 
 
-def auto_search(upload_files: List[UploadFile], offset, duration) -> List[Dict]:
+def auto_search(upload_files: List[UploadFile]) -> List[Dict]:
     results = []
     features = pd.DataFrame(
         index=list(range(len(upload_files))), columns=columns(), dtype=np.float32
@@ -128,7 +128,7 @@ def auto_search(upload_files: List[UploadFile], offset, duration) -> List[Dict]:
                 file.file.seek(0)
                 content = file.file.read()
                 f.write(content)
-            features.loc[i] = compute_features(tmp, offset, duration)
+            features.loc[i] = compute_features(tmp)
         finally:
             os.unlink(tmp)
     clusters = fma_model.predict(features)
@@ -147,8 +147,6 @@ def auto_search(upload_files: List[UploadFile], offset, duration) -> List[Dict]:
 def search(
     files: List[UploadFile] = File(description="Multiple files as UploadFile"),
     option: SearchOption = SearchOption.Auto,
-    offset: float = 0.0,
-    duration: float = None,
 ):
     ret = {}
     if option == SearchOption.Lyrics:
@@ -160,7 +158,7 @@ def search(
             ret["error"] = str(ex)
     if option == SearchOption.Auto:
         try:
-            results = auto_search(files, offset, duration)
+            results = auto_search(files)
             ret["results"] = results
         except Exception as ex:
             logger.error(ex)
