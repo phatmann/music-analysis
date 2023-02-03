@@ -3,6 +3,10 @@
 ### Setup
 
 ```
+sudo apt install ffmpeg   # for mp3 reading
+```
+
+```
 virtualenv venv3
 source venv3/bin/activate
 pip install -e .
