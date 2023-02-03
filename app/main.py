@@ -18,7 +18,7 @@ from pinecone.core.client.model.query_response import QueryResponse
 from pydantic import BaseModel
 from tqdm import tqdm
 
-from music_analysis.feature_extraction_clustering import compute_features
+from music_analysis.feature_extraction import compute_features, spectral_columns
 from music_analysis.utils import get_metadata_dir, load
 
 dotenv.load_dotenv()
@@ -28,35 +28,6 @@ data_dir = Path("./covers32k")
 api_key = os.getenv("PINECONE_API_KEY") or "820713d5-37c7-4570-877a-b23efb701b1c"
 pinecone.init(api_key=api_key, environment="us-west1-gcp")
 cover_song_index = pinecone.Index(index_name="cover-song")
-
-
-def columns():
-    feature_sizes = dict(
-        chroma_stft=12,
-        chroma_cqt=12,
-        chroma_cens=12,
-        tonnetz=6,
-        mfcc=20,
-        rmse=1,
-        zcr=1,
-        spectral_centroid=1,
-        spectral_bandwidth=1,
-        spectral_contrast=7,
-        spectral_rolloff=1,
-    )
-    moments = ("mean", "std", "skew", "kurtosis", "median", "min", "max")
-
-    columns = []
-    for name, size in feature_sizes.items():
-        for moment in moments:
-            it = ((name, moment, "{:02d}".format(i + 1)) for i in range(size))
-            columns.extend(it)
-
-    names = ("feature", "statistics", "number")
-    columns = pd.MultiIndex.from_tuples(columns, names=names)
-
-    # More efficient to slice if indexes are sorted.
-    return columns.sort_values()
 
 
 class PineConeVector(BaseModel):
@@ -119,7 +90,9 @@ def search_cover_song(upload_files: List[UploadFile]) -> List[Dict]:
 def auto_search(upload_files: List[UploadFile]) -> List[Dict]:
     results = []
     features = pd.DataFrame(
-        index=list(range(len(upload_files))), columns=columns(), dtype=np.float32
+        index=list(range(len(upload_files))),
+        columns=spectral_columns(),
+        dtype=np.float32,
     )
     for i, file in enumerate(upload_files):
         fd, tmp = tempfile.mkstemp()
