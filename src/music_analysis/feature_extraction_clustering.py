@@ -3,6 +3,7 @@ import logging
 import os
 import warnings
 from multiprocessing.pool import ThreadPool as Pool
+from rich.progress import track
 from pathlib import Path
 
 import dotenv
@@ -115,18 +116,25 @@ def create_library_features():
     tracks = tracks[(tracks["set", "subset"] == "small")]
     features = pd.DataFrame(index=tracks.index, columns=columns(), dtype=np.float32)
 
-    # More than usable CPUs to be CPU bound, not I/O bound. Beware memory.
-    nb_workers = int(1.5 * len(os.sched_getaffinity(0)))
+    ## More than usable CPUs to be CPU bound, not I/O bound. Beware memory.
+    #nb_workers = int(1.5 * len(os.sched_getaffinity(0)))
 
-    print("Working with {} processes.".format(nb_workers))
+    #print("Working with {} processes.".format(nb_workers))
 
-    pool = Pool(nb_workers)
-    it = pool.imap_unordered(compute_features, tracks.index)
+    #pool = Pool(nb_workers)
+    #it = pool.imap_unordered(compute_features, tracks.index)
 
-    for i, row in enumerate(tqdm(it, total=len(tracks.index)), start=1):
-        features.loc[row.name] = row
+    #for i, row in enumerate(tqdm(it, total=len(tracks.index)), start=1):
+    #    features.loc[row.name] = row
 
-        if i % 500 == 0:
+    #    if i % 500 == 0:
+    #        save(features, 10)
+
+    for i, tid in enumerate(track(tracks.index, description="Processing..."), start=1):
+        print(tid)
+        features.loc[tid] = compute_features(tid)
+
+        if i % 10 == 0:
             save(features, 10)
 
     save(features, 10)
