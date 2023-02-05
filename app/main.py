@@ -20,7 +20,7 @@ from pydantic import BaseModel
 from tqdm import tqdm
 
 from music_analysis.feature_extraction import compute_features, spectral_columns
-from music_analysis.utils import get_metadata_dir, load
+from music_analysis.utils import get_audio_path, get_metadata_dir, load
 
 dotenv.load_dotenv()
 
@@ -28,6 +28,7 @@ logger = logging.getLogger()
 data_dir = Path("./covers32k")
 api_key = os.getenv("PINECONE_API_KEY") or "820713d5-37c7-4570-877a-b23efb701b1c"
 audio_dir = os.getenv("AUDIO_DIR")
+audio_base_url = os.getenv("AUDIO_BASE_URL")
 pinecone.init(api_key=api_key, environment="us-west1-gcp")
 cover_song_index = pinecone.Index(index_name="cover-song")
 
@@ -116,6 +117,7 @@ def auto_search(upload_files: List[UploadFile]) -> List[Dict]:
         for i, track in samples.iterrows():
             result = {k: v for k, v in track["album"].items() if k in keys}
             result["track_id"] = i
+            result["audio_path"] = get_audio_path(audio_base_url, i)
             results.append(result)
     return results
 
