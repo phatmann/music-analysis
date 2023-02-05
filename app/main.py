@@ -14,6 +14,7 @@ import pinecone
 import requests
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pinecone.core.client.model.query_response import QueryResponse
 from pydantic import BaseModel
 from tqdm import tqdm
@@ -26,6 +27,7 @@ dotenv.load_dotenv()
 logger = logging.getLogger()
 data_dir = Path("./covers32k")
 api_key = os.getenv("PINECONE_API_KEY") or "820713d5-37c7-4570-877a-b23efb701b1c"
+audio_dir = os.getenv("AUDIO_DIR")
 pinecone.init(api_key=api_key, environment="us-west1-gcp")
 cover_song_index = pinecone.Index(index_name="cover-song")
 
@@ -65,6 +67,8 @@ app = FastAPI(
     },
 )
 app.add_middleware(CORSMiddleware, allow_origins=["*"])
+app.mount("/song", StaticFiles(directory=f"{audio_dir}"), name="song")
+
 
 small_tracks = load(get_metadata_dir() / "small-tracks.csv")
 fma_model = pickle.load(
